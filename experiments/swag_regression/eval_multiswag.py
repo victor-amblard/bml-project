@@ -14,6 +14,7 @@ from swag.posteriors import SWAG
 
 parser = argparse.ArgumentParser(description='SGD/SWA training')
 parser.add_argument('--config_file', type=str, default=None, required=True, help='training directory (default: None)')
+parser.add_argument('--n_seeds', type=int, default=None, required=True, help='training directory (default: None)')
 parser_args = parser.parse_args()
 
 args =None 
@@ -73,21 +74,27 @@ n_ensembled = 0.
 multiswag_probs = None
 all_probs = []
 
-for ckpt_i, ckpt in enumerate(args['swag_ckpts']):
+swag_ckpts = [os.path.join(args['dir'],"swag_{}".format(seed), "swag-{}.pt".format(args['epochs'])) for seed in range(parser_args.n_seeds)]
+print(swag_ckpts)
+for ckpt_i, ckpt in enumerate(swag_ckpts):
     print("Checkpoint {}".format(ckpt))
     checkpoint = torch.load(ckpt)
     swag_model.subspace.rank = torch.tensor(0)
     swag_model.load_state_dict(checkpoint['state_dict'])
     all_probs_sample = []
+
     for sample in range(args['swag_samples']):
-        print(swag_model.sq_mean  - swag_model.mean **2)
+        all_params_split = []
+        offset = 0
+        for p in swag_model.base_model.parameters():
+            all_params_split.append(p.data.mean())
+        idx = 1
+        print("{:.8f}".format(all_params_split[0]))
+
         swag_model.sample(.5)
-        utils.bn_update(loaders['train'], swag_model)
         res = utils.test(loaders['test'], swag_model)
         probs = res['predictions']
-        # targets = res['targets']
-        # nll = utils.nll(probs, targets)
-        # acc = utils.accuracy(probs, targets)
+
         all_probs_sample.append(probs.copy())
         if multiswag_probs is None:
             multiswag_probs = probs.copy()
@@ -96,11 +103,6 @@ for ckpt_i, ckpt in enumerate(args['swag_ckpts']):
             multiswag_probs +=  (probs - multiswag_probs)/ (n_ensembled + 1)
         n_ensembled += 1
 
-        # ens_nll = utils.nll(multiswag_probs, targets)
-        # ens_acc = utils.accuracy(multiswag_probs, targets)
-        # values = [ckpt_i, sample, nll, acc, ens_nll, ens_acc]
-        # table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
-        # print(table)
     all_probs.append(all_probs_sample.copy())
 
 print('Preparing directory %s' % args['savedir'])

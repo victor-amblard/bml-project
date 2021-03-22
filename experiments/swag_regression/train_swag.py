@@ -2,6 +2,7 @@ import argparse
 import os, sys
 import time
 import tabulate
+import yaml 
 
 import torch
 import torch.nn.functional as F
@@ -10,10 +11,10 @@ import numpy as np
 sys.path.append("/home/victor/Data/Mines-ParisTech/M2/mva/S2/understandingbdl/")
 from swag import data, models, utils, losses
 from swag.posteriors import SWAG
-import yaml 
 
 parser = argparse.ArgumentParser(description='SGD/SWA training')
 parser.add_argument('--config_file', type=str, default=None, required=True, help='training directory (default: None)')
+parser.add_argument('--seed', type=int, default=None, required=True, help='training directory (default: None)')
 parser_args = parser.parse_args()
 
 args =None 
@@ -24,8 +25,9 @@ with open(parser_args.config_file, 'r') as fl:
     except yaml.YAMLError as exc:
         print(exc)
 print(args)
+args['dir'] = os.path.join(args['dir'], "swag_{}".format(parser_args.seed))
 args['subspace'] = 'covariance'
-args['seed'] = 1
+args['seed'] = parser_args.seed
 args['device'] = None
 args['batch_size'] = 64
 args['num_workers'] = 5
@@ -111,6 +113,7 @@ utils.save_checkpoint(
 sgd_ens_preds = None
 sgd_targets = None
 n_ensembled = 0.
+all_sgd_ens_preds = []
 
 for epoch in range(start_epoch, args['epochs']):
     time_ep = time.time()
@@ -125,18 +128,18 @@ for epoch in range(start_epoch, args['epochs']):
         test_res = {'loss': None}
 
     if  (epoch + 1) > args['swag_start'] and (epoch + 1 - args['swag_start']) % args['swag_c_epochs'] == 0:
-        sgd_preds, sgd_targets = utils.predictions(loaders["train"], model)
-        sgd_res = utils.predict(loaders["train"], model)
-        sgd_preds = sgd_res["predictions"]
-        sgd_targets = sgd_res["targets"]
+        sgd_preds = utils.test(loaders["test"], model)
+        sgd_res = utils.test(loaders["test"], model)
+        sgd_preds = sgd_preds["predictions"]
+        # sgd_targets = sgd_res["targets"]
         # print("updating sgd_ens")
+        all_sgd_ens_preds.append(sgd_preds.copy())
         if sgd_ens_preds is None:
             sgd_ens_preds = sgd_preds.copy()
         else:
             #TODO: rewrite in a numerically stable way
             sgd_ens_preds +=  (sgd_preds - sgd_ens_preds)/ (n_ensembled + 1)
 
-        sgd_ens_acc = (np.argmax(sgd_ens_preds, axis=1) == sgd_targets).mean()
         n_ensembled += 1
         swag_model.collect_model(model)
         if epoch == 0 or epoch % args['eval_freq'] == args['eval_freq'] - 1 or epoch == args['epochs'] - 1:
@@ -180,12 +183,12 @@ if args['epochs'] % args['save_freq'] != 0:
         state_dict=model.state_dict(),
         optimizer=optimizer.state_dict()
     )
-    if epochs > args['swag_start']:
+    if args['epochs'] > args['swag_start']:
         utils.save_checkpoint(
             args['dir'],
-            epochs,
+            args['epochs'],
             name='swag',
             state_dict=swag_model.state_dict(),
         )
 
-np.savez(os.path.join(args['dir'], "sgd_ens_preds.npz"), predictions=sgd_ens_preds, targets=sgd_targets)
+np.savez(os.path.join(args['dir'], "sgd_ens_preds.npz"), predictions=sgd_ens_preds, targets=sgd_targets, std=np.std(all_sgd_ens_preds, 0))

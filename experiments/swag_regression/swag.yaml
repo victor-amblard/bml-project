@@ -1,14 +1,14 @@
 data_path: ~/datasets
 dataset: CUSTOM
 model: RegNet
-epochs: 2000
-dir: ckpts/example2
+epochs: 20000
+dir: ckpts/example2/
 swag_runs: 5
 
-lr_init: 0.00001
+lr_init: 0.000005
 wd: 0.00001
-swag_start: 1500
-swag_lr: 0.000005
+swag_start: 15000
+swag_lr: 0.000003
 swag_samples: 20
 prior_var: 100
 

@@ -106,7 +106,7 @@ def get_imagenette160(path, train, download, transform):
     return ds
 
 def points_loader(path, num_workers, use_validation, val_size=20, shuffle_train=True):
-    data = np.load("/home/victor/Data/Mines-ParisTech/M2/mva/S2/understandingbdl/experiments/deep_ensembles/data2.npz")
+    data = np.load("../../experiments/swag_regression/data2.npz")
     train_set = torch.Tensor(data['f'])
     test_set = torch.Tensor(data['f_'])
     labels = torch.Tensor(data['y'])
