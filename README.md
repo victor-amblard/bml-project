@@ -1,9 +1,13 @@
 
 Project for MVA Bayesian Machine Learning course
+By Victor Amblard, Remi Carnec and Jean Rubin
 
-Based on the work by:
+Based on the work by: Izmailov et al. (2020)
+
 Their paper: https://arxiv.org/abs/2002.08791
+
 Their github repo: https://github.com/izmailovpavel/understandingbdl
+
 ```
 +-- swag/
 |    +-- models/regression_net.py
