@@ -11,3 +11,5 @@ swag_start: 1500
 swag_lr: 0.000005
 swag_samples: 20
 prior_var: 100
+
+swag_ckpts: []
