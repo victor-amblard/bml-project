@@ -4,7 +4,7 @@ Project for MVA Bayesian Machine Learning course
 Based on the work by:
 Their paper: https://arxiv.org/abs/2002.08791
 Their github repo: https://github.com/izmailovpavel/understandingbdl
-
+```
 +-- swag/
 |    +-- models/regression_net.py
 |    +-- posteriors/swag.py
@@ -19,3 +19,4 @@ Their github repo: https://github.com/izmailovpavel/understandingbdl
 |     |   +-- multi_swag.ipynb
 |     +-- gaussian_process_regression
 |     |   +-- gpr.ipynb
+```
